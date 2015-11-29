@@ -10,6 +10,10 @@ osMutexId usart2_tx_mutex_id;
 #define SIGNAL_USART2_TX 0x2
 osThreadId usart2_thread_id;
 
+int usart2_tx_remainingData = 0;
+int usart2_tx_isSingleChar = 0;
+const char* usart2_tx_dataPtr;
+
 SyncSerialUSART2::SyncSerialUSART2(int baudrate){
 	usart2_tx_mutex_id = osMutexCreate(osMutex(usart2_tx_mutex));
 	USART2_init(baudrate);
@@ -18,6 +22,7 @@ SyncSerialUSART2::SyncSerialUSART2(int baudrate){
 void SyncSerialUSART2::sendChar(char ch){
 	osMutexWait(usart2_tx_mutex_id, osWaitForever);
 	usart2_thread_id = osThreadGetId();
+	usart2_tx_remainingData = 1;
 	USART2_sendCharWithInterrupt(ch);
 	osSignalWait(SIGNAL_USART2_TX, osWaitForever);
 	osMutexRelease(usart2_tx_mutex_id);
@@ -57,6 +62,10 @@ void SyncSerialUSART2::printf(const char * format ,...){
 extern "C"
 {
 	void USART2_tx_callback(void){
-		osSignalSet(usart2_thread_id, SIGNAL_USART2_TX);
+		usart2_tx_remainingData--;
+		if(usart2_tx_remainingData == 0){
+			USART2_disableAndClean_it_tx();
+			osSignalSet(usart2_thread_id, SIGNAL_USART2_TX);
+		}
 	}
 }

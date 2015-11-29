@@ -21,6 +21,10 @@ void USART2_sendCharWithInterrupt(char ch);
 
 void USART2_tx_callback(void);
 
+void USART2_disableAndClean_it_tx(void);
+
+void USART2_enable_it_tx(void);
+
 #ifdef __cplusplus
 }
 #endif

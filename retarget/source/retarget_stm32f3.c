@@ -50,6 +50,15 @@ void USART2_sendCharWithInterrupt(char ch){
 	USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
 }
 
+void USART2_disableAndClean_it_tx(void){
+		USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
+		USART_ClearITPendingBit(USART2,USART_IT_TXE);
+}
+
+void USART2_enable_it_tx(void){
+		USART_ITConfig(USART2, USART_IT_TXE, ENABLE);
+}
+
 char USART2_getChar(void){
 	if(USART_GetFlagStatus(USART2,USART_FLAG_ORE)) USART_ClearFlag(USART2,USART_FLAG_ORE); 
 	
@@ -113,8 +122,6 @@ extern "C" {
 #endif
 void USART2_IRQHandler(void){
 	if(USART_GetITStatus(USART2, USART_IT_TXE)){
-		USART_ITConfig(USART2, USART_IT_TXE, DISABLE);
-		USART_ClearITPendingBit(USART2,USART_IT_TXE);
 		USART2_tx_callback();
 	}
 }

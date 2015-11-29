@@ -12,8 +12,14 @@ void tarea2(void const * arguments); //tarea 2
 osThreadId  tarea2ID;	//identificador del hilo  tarea 2
 osThreadDef (tarea2,osPriorityNormal,1,0);// macro para definir tareas (aputandor de la funcion, prioridad,?,?)
 
+void tarea3(void const * arguments); //tarea 3
+osThreadId  tarea3ID;	//identificador del hilo  tarea 3
+osThreadDef (tarea3,osPriorityNormal,1,0);// macro para definir tareas (aputandor de la funcion, prioridad,?,?)
+
+
 void tarea1Init(void);//funcion que iniciliza la tarea1
-void tarea2Init(void);//funcion que iniciliza la tarea1
+void tarea2Init(void);//funcion que iniciliza la tarea2
+void tarea3Init(void);//funcion que iniciliza la tarea3
 void button_mutex_init(void);// initializes button mutex
 
 void osInitiAll(void);
@@ -45,6 +51,7 @@ void osInitiAll(void){
 	safe_init();
 	tarea1Init();
 	tarea2Init();
+	tarea3Init();
 	button_mutex_init();
 	osKernelStart();
 }
@@ -61,6 +68,10 @@ void tarea2Init(void){
 	tarea2ID= osThreadCreate(osThread(tarea2),NULL);
 }
 
+void tarea3Init(void){
+	tarea3ID= osThreadCreate(osThread(tarea3),NULL);
+}
+
 void tarea1(void const * arguments){
 	while(1){
 		serial->printf("Thread: tarea1, Valve on\n");
@@ -70,9 +81,24 @@ void tarea1(void const * arguments){
 	}
 }
 
+int task2Counter = 0;
+int resetCounter = 0;
 void tarea2(void const * arguments){
 	while(1){
+		if(resetCounter){
+			task2Counter = 0;
+			resetCounter = 0;
+		}else{
+			task2Counter++;
+		}
+	}
+}
+
+void tarea3(void const * arguments){
+	while(1){
 		osDelay(1000);
+		serial->printf("****\nThread: tarea3, counter = %d\n****\n",task2Counter);
+		resetCounter = 1;
 	}
 }
 
