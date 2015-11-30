@@ -81,8 +81,8 @@ void tarea1(void const * arguments){
 	}
 }
 
-int task2Counter = 0;
-int resetCounter = 0;
+volatile int task2Counter = 0;
+volatile int resetCounter = 0;
 void tarea2(void const * arguments){
 	while(1){
 		if(resetCounter){
