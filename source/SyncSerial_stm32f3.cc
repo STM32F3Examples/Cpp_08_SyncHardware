@@ -2,6 +2,7 @@
 #include "retarget_stm32f3.h"
 #include "cmsis_os.h"
 #include "safe_stdlib.h"
+#include "dma_usart2.h"
 
 osMutexDef (usart2_tx_mutex);
 osMutexId usart2_tx_mutex_id;
@@ -12,7 +13,7 @@ osThreadId usart2_thread_id;
 
 SyncSerialUSART2::SyncSerialUSART2(int baudrate){
 	usart2_tx_mutex_id = osMutexCreate(osMutex(usart2_tx_mutex));
-	USART2_init(baudrate);
+	dma_and_usart2_init(baudrate);
 }
 
 void SyncSerialUSART2::sendChar(char ch){
@@ -29,7 +30,9 @@ char SyncSerialUSART2::getChar(void){
 
 void SyncSerialUSART2::puts(const char * pString){
 	osMutexWait(usart2_tx_mutex_id, osWaitForever);
-	SerialStream::puts(pString);
+	usart2_thread_id = osThreadGetId();
+	dma_usart2_puts(pString);
+	osSignalWait(SIGNAL_USART2_TX, osWaitForever);
 	osMutexRelease(usart2_tx_mutex_id);
 }
 
@@ -47,7 +50,14 @@ void SyncSerialUSART2::printf(const char * format ,...){
 
 	va_end(args);
 
-	this->puts(tempBuffer);
+	osMutexWait(usart2_tx_mutex_id, osWaitForever);
+	usart2_thread_id = osThreadGetId();
+
+	dma_usart2_nputs(tempBuffer,(bufferSize-1));
+
+	osSignalWait(SIGNAL_USART2_TX, osWaitForever);
+	osMutexRelease(usart2_tx_mutex_id);
+
 	safe_free(tempBuffer);
 }
 
@@ -57,6 +67,16 @@ void SyncSerialUSART2::printf(const char * format ,...){
 extern "C"
 {
 	void USART2_tx_callback(void){
+		osSignalSet(usart2_thread_id, SIGNAL_USART2_TX);
+	}
+}
+
+/**
+ * Exteral interrupt handler
+ */
+extern "C"
+{
+	void dma_usart2_tx_callback(void){
 		osSignalSet(usart2_thread_id, SIGNAL_USART2_TX);
 	}
 }
