@@ -7,7 +7,7 @@ OUTPUT_EXEC:= salida.elf
 #All the dtandard peripherial library files
 SPL_FILES:= $(notdir $(wildcard ../STM32F30x_StdPeriph_Driver/src/*.c ))
 
-C_SOURCE_FILES:= system_stm32f30x.c $(SPL_FILES) RTX_Conf_CM.c delay.c retarget_stm32f3.c safe_stdlib.c
+C_SOURCE_FILES:= system_stm32f30x.c $(SPL_FILES) RTX_Conf_CM.c delay.c retarget_stm32f3.c safe_stdlib.c dma_usart2.c
 CXX_SOURCE_FILES:= main.cc SerialStream.cc SyncSerial_stm32f3.cc MainApp.cc
 ASM_SOURCE_FILES:= startup_ARMCM4.S
 LINKER_FILES:= ./CMSIS_RTX/bin/libRTX_CM4.a
