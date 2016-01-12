@@ -3,6 +3,8 @@
 #include "stm32f30x.h"                  // Device header
 #include "MainApp.h"
 #include "safe_stdlib.h"
+#include "os_usart_stm32f0.h"
+#include "os_serial_stdio.h"
 
 void tarea1(void const * arguments); //tarea 1
 osThreadId  tarea1ID;	//identificador del hilo tarea 1
@@ -37,23 +39,25 @@ osMutexId button_mutex_id;
 
 
 int main(){
+	//Operating System initialization
 	osKernelInitialize();
+	osInitiAll();
 	//Hardware initialization
 	serial = new SyncSerialUSART2(9600);
-	//Operating System initialization
-	osInitiAll();
-	serial->printf("\nSystem ready\n");
+	os_serial_init();
+	os_usart1_init(9600);
+	//Start Thead Switching
+	osKernelStart();
 	//User application
+	serial->printf("\nSystem ready\n");
 	MainApp::main(serial);
 }
 
 void osInitiAll(void){
-	safe_init();
 	tarea1Init();
 	tarea2Init();
 	tarea3Init();
 	button_mutex_init();
-	osKernelStart();
 }
 
 void button_mutex_init(void){

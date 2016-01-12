@@ -66,7 +66,24 @@ char USART2_getChar(void){
 	return USART_ReceiveData(USART2);
 }
 
-void USART1_init(int baudrate){
+
+
+void __attribute__((weak)) USART2_tx_callback(void){}
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void USART2_IRQHandler(void){
+	if(USART_GetITStatus(USART2, USART_IT_TXE)){
+		USART2_tx_callback();
+	}
+}
+#ifdef __cplusplus
+}
+#endif
+
+
+void usart1_init(int baudrate){
 	GPIO_InitTypeDef GPIO_InitStructure;
 	USART_InitTypeDef USART_InitStructure;
 	
@@ -115,16 +132,53 @@ char USART1_getChar(void){
 	return USART_ReceiveData(USART1);
 }
 
-void __attribute__((weak)) USART2_tx_callback(void){}
+char* usart1_rx_buffer;
+int usart1_rx_stringLength;
+void (*usart1_rx_callback)(int);
+volatile int usart1_rx_inProgress;
+
+void usart1_async_gets(char* pString, void (*rx_complete_callback)(int)){
+	//Prepare data
+	usart1_rx_callback = rx_complete_callback;
+	usart1_rx_buffer = pString;
+	usart1_rx_stringLength = 0;
+	usart1_rx_inProgress = 1;
+	//Enable RX interrupt
+	USART_ClearITPendingBit(USART1, USART_IT_RXNE);
+	NVIC_EnableIRQ(USART1_IRQn);
+	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+}
+
+static void rx_dummy_callback(int string_length){
+}
+
+int usart1_sync_gets(char* pString){
+	usart1_async_gets(pString, rx_dummy_callback);
+	while(usart1_rx_inProgress);
+	return usart1_rx_stringLength;
+}
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-void USART2_IRQHandler(void){
-	if(USART_GetITStatus(USART2, USART_IT_TXE)){
-		USART2_tx_callback();
+
+void USART1_IRQHandler(void){
+	if(USART_GetITStatus(USART1,USART_IT_RXNE) == SET){
+		char rx_data = USART_ReceiveData(USART1);
+		if(usart1_rx_inProgress){
+			if(rx_data == '\r' || rx_data == '\n'){
+				usart1_rx_buffer[usart1_rx_stringLength] = '\0';
+				usart1_rx_callback(usart1_rx_stringLength);
+				usart1_rx_inProgress = 0;
+				USART_ITConfig(USART1, USART_IT_RXNE, DISABLE);
+			}else{
+				usart1_rx_buffer[usart1_rx_stringLength] = rx_data;
+				usart1_rx_stringLength++;
+			}
+		}
 	}
 }
+
 #ifdef __cplusplus
 }
 #endif
